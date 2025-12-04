@@ -1,0 +1,20 @@
+# Frontend dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Env file (if you ever use VITE_ vars)
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# OS/editor junk
+.DS_Store
+.idea/
+.vscode/
