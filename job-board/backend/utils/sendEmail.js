@@ -1,23 +1,28 @@
 // backend/utils/sendEmail.js
-
-// NOTE: This is a mock email sender for deployed environment (Render).
-// It does NOT actually send emails, because Render blocks SMTP ports.
-// Instead, it just logs the email data so the rest of the app works.
+// Real email sender using Resend API (not SMTP)
 
 async function sendEmail(to, subject, text) {
   try {
-    console.log("📧 [MOCK EMAIL SENT]");
-    console.log("To:", to);
-    console.log("Subject:", subject);
-    console.log("Body:\n", text);
-    // Return a fake info object like nodemailer would
-    return {
-      accepted: [to],
-      messageId: "mock-" + Date.now(),
-    };
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "CodSoft JobBoard <onboarding@resend.dev>",
+        to: [to],
+        subject,
+        text,
+      }),
+    });
+
+    const data = await res.json();
+    console.log("📧 Email sent via Resend:", data);
+    return data;
   } catch (err) {
-    console.error("❌ Mock email error:", err);
-    // Don’t throw here – keep main request flowing
+    console.error("❌ Resend email error:", err);
+    throw err;
   }
 }
 
