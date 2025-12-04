@@ -4,7 +4,7 @@ import sendEmail from "../utils/sendEmail.js";
 
 const router = express.Router();
 
-// In-memory OTP store
+// In-memory OTP store: { email: { otp, role, expiresAt } }
 const otpStore = new Map();
 
 /**
@@ -22,14 +22,19 @@ router.post("/send-otp", async (req, res) => {
 
     const lowerEmail = email.toLowerCase();
 
-    // Generate OTP
+    // Generate a 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 mins expiry
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
+    // Store OTP in memory
     otpStore.set(lowerEmail, { otp, role, expiresAt });
 
-    // Send OTP email
-    await sendEmail(
+    // Log it so you can see it in Render logs if needed
+    console.log(`🔐 OTP for ${lowerEmail}: ${otp}`);
+
+    // Fire-and-forget email (mock email in production)
+    // We DO NOT let this affect the response status anymore
+    sendEmail(
       email,
       "Your Job Board login OTP",
       `Hi,
@@ -42,12 +47,20 @@ This code is valid for 10 minutes. If you did not request this, you can ignore t
 
 Best regards,
 CodSoft JobBoard`
-    );
+    ).catch((err) => {
+      console.error("sendEmail error (ignored for login flow):", err);
+    });
 
-    res.json({ message: "OTP sent successfully." });
+    // Return success + OTP (helpful for testing from Network tab)
+    return res.json({
+      message: "OTP created successfully.",
+      otp,           // you can remove this in real production
+    });
   } catch (err) {
     console.error("send-otp error:", err);
-    res.status(500).json({ message: "Failed to send OTP email." });
+    return res
+      .status(500)
+      .json({ message: "Server error while creating OTP." });
   }
 });
 
@@ -86,16 +99,19 @@ router.post("/verify-otp", (req, res) => {
       return res.status(400).json({ message: "Invalid OTP." });
     }
 
+    // OTP is valid – clean up store
     otpStore.delete(lowerEmail);
 
-    res.json({
+    return res.json({
       message: "OTP verified successfully.",
       email: lowerEmail,
       role,
     });
   } catch (err) {
     console.error("verify-otp error:", err);
-    res.status(500).json({ message: "Server error verifying OTP." });
+    return res
+      .status(500)
+      .json({ message: "Server error verifying OTP." });
   }
 });
 
