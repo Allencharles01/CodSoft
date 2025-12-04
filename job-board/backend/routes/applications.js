@@ -35,7 +35,25 @@ router.post(
 
       await app.save();
 
-      // (Optional) you can also send a "we received your application" email here
+      // ✅ Send "thanks for applying, under review" email to candidate
+      try {
+        await sendEmail(
+          app.candidateEmail,
+          `Thanks for applying to ${app.company}`,
+          `Hi ${app.candidateName},
+
+Thank you for applying for the position of "${app.jobTitle}" at ${app.company}.
+
+Your application has been received and is currently under review.
+You will be notified by email once the employer updates your application status.
+
+Best regards,
+CodSoft JobBoard`
+        );
+      } catch (emailErr) {
+        console.error("Error sending application confirmation email:", emailErr);
+        // Don't fail the API if email fails
+      }
 
       res.status(201).json(app);
     } catch (err) {

@@ -32,7 +32,7 @@ router.post("/send-otp", async (req, res) => {
 
     console.log(`🔐 OTP for ${lowerEmail}: ${otp} (role: ${finalRole})`);
 
-    // Fire-and-forget email (login must not break even if email fails)
+    // Fire-and-forget email
     sendEmail(
       email,
       "Your Job Board login OTP",
@@ -52,7 +52,7 @@ CodSoft JobBoard`
 
     return res.json({
       message: "OTP created successfully.",
-      otp, // helpful for dev; remove later if you want
+      otp, // useful for dev; you can remove later
     });
   } catch (err) {
     console.error("send-otp error:", err);
