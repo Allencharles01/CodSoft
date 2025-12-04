@@ -1,33 +1,23 @@
 // backend/utils/sendEmail.js
-import nodemailer from "nodemailer";
+
+// NOTE: This is a mock email sender for deployed environment (Render).
+// It does NOT actually send emails, because Render blocks SMTP ports.
+// Instead, it just logs the email data so the rest of the app works.
 
 async function sendEmail(to, subject, text) {
   try {
-    const transporter = nodemailer.createTransport({
-      host: process.env.EMAIL_HOST,       // e.g. smtp.gmail.com
-      port: Number(process.env.EMAIL_PORT) || 587,
-      secure: false,                      // false for TLS/STARTTLS
-      auth: {
-        user: process.env.EMAIL_USER,     // your email
-        pass: process.env.EMAIL_PASS,     // app password
-      },
-    });
-
-    // Verify connection (shows full error if credentials are wrong)
-    await transporter.verify();
-
-    const info = await transporter.sendMail({
-      from: `"CodSoft JobBoard" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      text,
-    });
-
-    console.log("✅ Email sent:", info.messageId);
-    return info;
+    console.log("📧 [MOCK EMAIL SENT]");
+    console.log("To:", to);
+    console.log("Subject:", subject);
+    console.log("Body:\n", text);
+    // Return a fake info object like nodemailer would
+    return {
+      accepted: [to],
+      messageId: "mock-" + Date.now(),
+    };
   } catch (err) {
-    console.error("❌ FULL EMAIL ERROR:", err);
-    throw err; // important: this allows route to return 500 properly
+    console.error("❌ Mock email error:", err);
+    // Don’t throw here – keep main request flowing
   }
 }
 
