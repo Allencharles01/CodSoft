@@ -17,6 +17,9 @@ dotenv.config();
 
 const app = express();
 
+// So cookies & secure headers work correctly behind Render's proxy
+app.set("trust proxy", 1);
+
 // ----------------------------
 // Basic Middleware
 // ----------------------------
@@ -32,7 +35,17 @@ const allowedOrigins = [
 // CORS
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow server-to-server / health checks with no Origin header
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Block anything else
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );

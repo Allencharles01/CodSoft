@@ -4,7 +4,7 @@ import sendEmail from "../utils/sendEmail.js";
 
 const router = express.Router();
 
-// In-memory OTP store: { email: { otp, role, expiresAt } }
+// In-memory OTP store
 const otpStore = new Map();
 
 /**
@@ -20,16 +20,19 @@ router.post("/send-otp", async (req, res) => {
         .json({ message: "Email and role are required." });
     }
 
+    const lowerEmail = email.toLowerCase();
+
+    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = Date.now() + 10 * 60 * 1000;
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 mins expiry
 
-    otpStore.set(email.toLowerCase(), { otp, role, expiresAt });
+    otpStore.set(lowerEmail, { otp, role, expiresAt });
 
-    try {
-      await sendEmail(
-        email,
-        "Your Job Board login OTP",
-        `Hi,
+    // Send OTP email
+    await sendEmail(
+      email,
+      "Your Job Board login OTP",
+      `Hi,
 
 Your one-time password (OTP) for logging into the CodSoft JobBoard is:
 
@@ -39,18 +42,12 @@ This code is valid for 10 minutes. If you did not request this, you can ignore t
 
 Best regards,
 CodSoft JobBoard`
-      );
-    } catch (err) {
-      console.error("Error sending OTP email:", err);
-      return res
-        .status(500)
-        .json({ message: "Failed to send OTP email." });
-    }
+    );
 
     res.json({ message: "OTP sent successfully." });
   } catch (err) {
     console.error("send-otp error:", err);
-    res.status(500).json({ message: "Server error sending OTP." });
+    res.status(500).json({ message: "Failed to send OTP email." });
   }
 });
 
@@ -67,7 +64,8 @@ router.post("/verify-otp", (req, res) => {
         .json({ message: "Email and OTP are required." });
     }
 
-    const record = otpStore.get(email.toLowerCase());
+    const lowerEmail = email.toLowerCase();
+    const record = otpStore.get(lowerEmail);
 
     if (!record) {
       return res
@@ -78,7 +76,7 @@ router.post("/verify-otp", (req, res) => {
     const { otp: storedOtp, role, expiresAt } = record;
 
     if (Date.now() > expiresAt) {
-      otpStore.delete(email.toLowerCase());
+      otpStore.delete(lowerEmail);
       return res
         .status(400)
         .json({ message: "OTP has expired. Please request a new one." });
@@ -88,11 +86,11 @@ router.post("/verify-otp", (req, res) => {
       return res.status(400).json({ message: "Invalid OTP." });
     }
 
-    otpStore.delete(email.toLowerCase());
+    otpStore.delete(lowerEmail);
 
     res.json({
       message: "OTP verified successfully.",
-      email: email.toLowerCase(),
+      email: lowerEmail,
       role,
     });
   } catch (err) {
