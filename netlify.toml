@@ -1,4 +1,5 @@
 [build]
+  # tell Netlify to treat the frontend folder as the project root
   base    = "job-board/frontend"
   command = "npm run build"
   publish = "dist"
