@@ -9,31 +9,30 @@ const otpStore = new Map();
 
 /**
  * POST /api/auth/send-otp
+ * Body: { email, role? }
+ * role is optional so it works for both candidate & employer.
  */
 router.post("/send-otp", async (req, res) => {
   try {
     const { email, role } = req.body;
 
-    if (!email || !role) {
-      return res
-        .status(400)
-        .json({ message: "Email and role are required." });
+    if (!email) {
+      return res.status(400).json({ message: "Email is required." });
     }
 
     const lowerEmail = email.toLowerCase();
+    const finalRole = role || "unknown";
 
-    // Generate a 6-digit OTP
+    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
-    // Store OTP in memory
-    otpStore.set(lowerEmail, { otp, role, expiresAt });
+    // Store OTP
+    otpStore.set(lowerEmail, { otp, role: finalRole, expiresAt });
 
-    // Log it so you can see it in Render logs if needed
-    console.log(`🔐 OTP for ${lowerEmail}: ${otp}`);
+    console.log(`🔐 OTP for ${lowerEmail}: ${otp} (role: ${finalRole})`);
 
-    // Fire-and-forget email (mock email in production)
-    // We DO NOT let this affect the response status anymore
+    // Fire-and-forget email (login must not break even if email fails)
     sendEmail(
       email,
       "Your Job Board login OTP",
@@ -51,10 +50,9 @@ CodSoft JobBoard`
       console.error("sendEmail error (ignored for login flow):", err);
     });
 
-    // Return success + OTP (helpful for testing from Network tab)
     return res.json({
       message: "OTP created successfully.",
-      otp,           // you can remove this in real production
+      otp, // helpful for dev; remove later if you want
     });
   } catch (err) {
     console.error("send-otp error:", err);
@@ -66,6 +64,7 @@ CodSoft JobBoard`
 
 /**
  * POST /api/auth/verify-otp
+ * Body: { email, otp }
  */
 router.post("/verify-otp", (req, res) => {
   try {
@@ -99,7 +98,6 @@ router.post("/verify-otp", (req, res) => {
       return res.status(400).json({ message: "Invalid OTP." });
     }
 
-    // OTP is valid – clean up store
     otpStore.delete(lowerEmail);
 
     return res.json({

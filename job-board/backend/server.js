@@ -17,9 +17,6 @@ dotenv.config();
 
 const app = express();
 
-// So cookies & secure headers work correctly behind Render's proxy
-app.set("trust proxy", 1);
-
 // ----------------------------
 // Basic Middleware
 // ----------------------------
@@ -36,14 +33,12 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow server-to-server / health checks with no Origin header
-      if (!origin) return callback(null, true);
+      if (!origin) return callback(null, true); // health checks, etc.
 
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      // Block anything else
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
@@ -188,20 +183,23 @@ app.post("/api/applications", upload.single("resume"), async (req, res) => {
       status: "pending",
     });
 
+    // Application confirmation email (thanks + under review)
     try {
       await sendEmail(
         newApp.candidateEmail,
-        "We received your application",
+        `Thanks for applying to ${newApp.company}`,
         `Hi ${newApp.candidateName},
 
-Thanks for applying for ${newApp.jobTitle} at ${newApp.company}.
-We received your application successfully.
+Thank you for applying for the position of "${newApp.jobTitle}" at ${newApp.company}.
+
+Your application has been received and is currently under review.
+You will be notified by email once the employer updates your application status.
 
 Best regards,
 CodSoft JobBoard`
       );
     } catch (err) {
-      console.error("Email error:", err);
+      console.error("Application email error:", err);
     }
 
     res.status(201).json(newApp);
